@@ -1,8 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import toast, { Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import ReactCanvasConfetti from "react-canvas-confetti";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { correct, incorrect, simplifyParam } from "../services/functions";
+
+const canvasStyles = {
+  position: "fixed",
+  pointerEvents: "none",
+  width: "100%",
+  height: "100%",
+  top: 0,
+  left: 0,
+};
 
 const OperationContainer = () => {
   const [operation, setOperation] = useState("");
@@ -12,37 +23,49 @@ const OperationContainer = () => {
 
   const { typeOperation } = useParams();
 
-  const correct = () =>
-    toast.success("Correcto, vamos con otra!!", {
-      style: {
-        backgroundColor: "#6EE7B7",
-        padding: "1rem",
-        borderRadius: "15px",
-        fontWeight: "500",
-      },
+  const refAnimationInstance = useRef(null);
+
+  const getInstance = useCallback((instance) => {
+    refAnimationInstance.current = instance;
+  }, []);
+
+  const makeShot = useCallback((particleRatio, opts) => {
+    refAnimationInstance.current &&
+      refAnimationInstance.current({
+        ...opts,
+        origin: { y: 0.7 },
+        particleCount: Math.floor(250 * particleRatio),
+      });
+  }, []);
+
+  const fire = useCallback(() => {
+    makeShot(0.25, {
+      spread: 26,
+      startVelocity: 55,
     });
 
-  const incorrect = () =>
-    toast.error("Incorrecto, intenta de nuevo!!", {
-      style: {
-        backgroundColor: "#FCA5A5",
-        padding: "1rem",
-        borderRadius: "15px",
-        fontWeight: "500",
-      },
+    makeShot(0.2, {
+      spread: 60,
     });
 
-  const simplifyParam = (param) => {
-    if (param === "suma") {
-      return "add";
-    } else if (param === "resta") {
-      return "sub";
-    } else if (param === "multiplicación") {
-      return "mul";
-    } else if (param === "división") {
-      return "div";
-    }
-  };
+    makeShot(0.35, {
+      spread: 100,
+      decay: 0.91,
+      scalar: 0.8,
+    });
+
+    makeShot(0.1, {
+      spread: 120,
+      startVelocity: 25,
+      decay: 0.92,
+      scalar: 1.2,
+    });
+
+    makeShot(0.1, {
+      spread: 120,
+      startVelocity: 45,
+    });
+  }, [makeShot]);
 
   const handleNextOperation = (e) => {
     e.preventDefault();
@@ -55,6 +78,7 @@ const OperationContainer = () => {
     e.preventDefault();
     if (answer === parseInt(inputAnswer)) {
       correct();
+      fire();
       handleNextOperation(e);
     } else {
       incorrect();
@@ -119,6 +143,7 @@ const OperationContainer = () => {
           duration: 1200,
         }}
       />
+      <ReactCanvasConfetti refConfetti={getInstance} style={canvasStyles} />
     </div>
   );
 };
